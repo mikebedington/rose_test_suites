@@ -1,0 +1,37 @@
+#!jinja2
+[cylc]
+	UTC mode = True # Ignore DST
+	abort if any task fails = True
+
+[scheduling]
+	initial cycle point = 2018-06-12T00:00:00Z
+	final cycle point = +P1D
+	[[dependencies]]
+		[[[R1]]]
+			graph = task_a2 => task_b2
+		[[[P1D]]]
+			graph = """
+					task_d2[-P1D] => task_b2<rose_sandbox::task_c> => task_c2 => task_d2
+					"""
+
+[runtime]
+	[[root]]
+		env-script = eval $(rose task-env --cycle-offset=P1D)
+		script = rose task-run --verbose
+		[[[job]]]
+			execution time limit = PT3H
+		[[[events]]]
+			mail events = submission timeout, execution timeout
+			submission timeout = P1D
+
+	[[task_a2]]
+	[[task_b2]]
+        [[[suite state polling]]]
+            max-polls = 1000
+			interval = PT1S
+	[[task_c2]]
+	[[task_d2]]
+        script = """
+            echo "run: task D2"
+            """
+
